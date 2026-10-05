@@ -1,0 +1,36 @@
+[package]
+name = "testinference"
+version = "0.1.0"
+description = "TestInference — AI-driven end-to-end test automation"
+authors = ["TestInference"]
+edition = "2021"
+rust-version = "1.77.2"
+
+[lib]
+name = "testinference_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["io-util", "macros", "process", "rt", "sync", "time"] }
+serde_yaml_ng = "0.10"
+time = { version = "0.3", features = ["formatting", "macros"] }
+tauri-plugin-dialog = "2.7.3"
+sha2 = "0.10.9"
+base64 = "0.23.1"
+
+# Secrets live in the OS keychain, never on disk. apple-native is the macOS
+# backend; add windows-native / linux-native when those targets are built.
+[target.'cfg(target_os = "macos")'.dependencies]
+keyring = { version = "3", features = ["apple-native"] }
+
+[profile.release]
+codegen-units = 1
+lto = true
+panic = "abort"
+strip = true

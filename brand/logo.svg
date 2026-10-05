@@ -1,0 +1,18 @@
+<!--
+  TestInference.
+
+  Two lines of text, and a third that leaves the paragraph and becomes a
+  tick. That is the whole product in one stroke: written words going in,
+  something checkable coming out.
+
+  Drawn with one weight and round caps so it survives being shrunk to the
+  16 pixels of a window title, where most marks turn to mud.
+-->
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <rect x="96" y="96" width="832" height="832" rx="208" fill="#2f6f6b"/>
+  <g fill="none" stroke="#f7f7f5" stroke-width="74" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M300 372h260"/>
+    <path d="M300 492h170"/>
+    <path d="M300 648l132 132 316-428"/>
+  </g>
+</svg>
