@@ -166,6 +166,19 @@ export default function Shell({
       summary?.pendingGateB ? "waiting" : (summary?.cases ?? 0) > 0 ? "done" : "idle",
     ],
     ["Published", `${summary?.published ?? 0}`, (summary?.published ?? 0) > 0 ? "done" : "idle"],
+    ["Explored", `${summary?.pages ?? 0}`, (summary?.pages ?? 0) > 0 ? "done" : "idle"],
+    ["Tests", `${summary?.plans ?? 0}`, (summary?.plans ?? 0) > 0 ? "done" : "idle"],
+    [
+      "Last run",
+      summary?.lastRun
+        ? summary.lastRun.failed > 0
+          ? `${summary.lastRun.failed} failed`
+          : `${summary.lastRun.passed} passed`
+        : "not yet",
+      // A failing run is not "waiting on a person" the way a gate is, but
+      // it is the one thing on this strip nobody should walk past.
+      summary?.lastRun ? (summary.lastRun.failed > 0 ? "waiting" : "done") : "idle",
+    ],
   ];
 
   return (
@@ -277,13 +290,39 @@ export default function Shell({
       </div>
 
       <footer className="statusbar">
-        <span>Jev · off</span>
+        <span title={summary?.judge.note}>{judging(summary)}</span>
         <span>{summary ? `${summary.decisions} decisions recorded` : "no project"}</span>
         <span className="spacer" />
-        <span>{project ? "Context saved locally · not pushed" : ""}</span>
+        <span>{project ? saved(summary) : ""}</span>
       </footer>
     </div>
   );
+}
+
+/**
+ * What is answering the small judgement calls.
+ *
+ * This said "Jev · off" whatever was switched on, which is worse than
+ * saying nothing: a status bar that is wrong about one thing cannot be
+ * trusted about the rest.
+ */
+function judging(summary: Summary | null): string {
+  if (!summary) return "no project";
+  const { mode, ready, model } = summary.judge;
+  if (mode === "rules") return "Judging · rules";
+  if (!ready) return `${mode === "jev" ? "Jev" : "Model"} · not set up`;
+  return mode === "jev" ? `Jev · ${model ?? "on"}` : `Judging · ${model ?? "a model"}`;
+}
+
+/** Whether the project's own records have been committed. */
+function saved(summary: Summary | null): string {
+  const git = summary?.git;
+  if (!git) return "Saved locally";
+  if (!git.isRepo) return "Saved locally · not a git repository";
+  if (git.contextChanged > 0) {
+    return `Saved locally · ${git.contextChanged} not committed`;
+  }
+  return git.hasRemote ? "Committed" : "Committed · no remote";
 }
 
 function title(view: View): string {

@@ -803,6 +803,15 @@ export interface Summary {
   bdd: number;
   steps: number;
   decisions: number;
+  /** Which judgement mode this project is on, and whether it can run. */
+  judge: JudgeState;
+  git: GitStatus;
+  /** Pages the explorer mapped. */
+  pages: number;
+  /** Tests written and ready to run. */
+  plans: number;
+  /** How the last run went, if anything has run. */
+  lastRun: { passed: number; failed: number; unfinished: number } | null;
 }
 
 export interface Commands {

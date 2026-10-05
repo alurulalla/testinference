@@ -1092,7 +1092,7 @@ fn project_edit(
 }
 
 #[tauri::command]
-fn project_summary(project_path: String) -> Value {
+fn project_summary(app: AppHandle, project_path: String) -> Value {
     let project = std::path::Path::new(&project_path);
     let requirements = store::list_requirements(project);
     let scenarios = store::list_scenarios(project);
@@ -1115,6 +1115,20 @@ fn project_summary(project_path: String) -> Value {
         "bdd": store::list_bdd(project).len(),
         "steps": store::read_library(project).len(),
         "decisions": store::count_decisions(project),
+        // For the status bar, which until now said "Jev · off" whatever
+        // was actually switched on.
+        "judge": judge::readiness(&app, &project_path),
+        "git": git::status(&project_path),
+        // The stages after publishing. Without these the strip and the
+        // cycle on Home stop at Publish, which tells a reader the app
+        // ends there.
+        "pages": store::list_app_pages(project).len(),
+        "plans": store::list_plans(project).len(),
+        "lastRun": store::list_attempts(project).last().map(|attempt| json!({
+            "passed": attempt.passed,
+            "failed": attempt.failed,
+            "unfinished": attempt.unfinished,
+        })),
     })
 }
 

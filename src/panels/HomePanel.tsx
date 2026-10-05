@@ -97,6 +97,14 @@ export default function HomePanel({ project, summary, onView }: Props) {
   if (waitingB) {
     decisions.push([`Gate B · ${waitingB} cases waiting`, "approve what gets published", "Review", "gateb"]);
   }
+  if (summary?.lastRun && summary.lastRun.failed > 0) {
+    decisions.push([
+      `${summary.lastRun.failed} tests failed on the last run`,
+      "either the application changed or the test is wrong — the run says which step",
+      "Open",
+      "runs",
+    ]);
+  }
   if (summary?.orphaned) {
     decisions.push([
       `${summary.orphaned} requirements have no source`,
@@ -112,8 +120,12 @@ export default function HomePanel({ project, summary, onView }: Props) {
         <div>
           <h1>{project.name}</h1>
           <p className="hint">
-            {project.appUrl || "no application URL"} · {summary?.documents ?? 0} documents · context
-            saved locally
+            {project.appUrl || "no application URL"} · {summary?.documents ?? 0} documents ·{" "}
+            {summary?.git.isRepo
+              ? summary.git.contextChanged > 0
+                ? `${summary.git.contextChanged} changes not committed`
+                : "committed"
+              : "saved locally"}
           </p>
         </div>
         <span className="spacer" />
@@ -156,6 +168,25 @@ export default function HomePanel({ project, summary, onView }: Props) {
             label="Publish"
             note={summary?.published ? `${summary.published} published` : "not yet"}
             state={step((summary?.published ?? 0) > 0, false)}
+          />
+          <Step
+            label="Explore"
+            note={summary?.pages ? `${summary.pages} pages` : "not yet"}
+            state={step((summary?.pages ?? 0) > 0, false)}
+          />
+          <Step
+            label="Tests"
+            note={summary?.plans ? `${summary.plans} written` : "not yet"}
+            state={step((summary?.plans ?? 0) > 0, false)}
+          />
+          <Step
+            label="Run"
+            note={
+              summary?.lastRun
+                ? `${summary.lastRun.passed} passed, ${summary.lastRun.failed} failed`
+                : "not yet"
+            }
+            state={step(Boolean(summary?.lastRun), (summary?.lastRun?.failed ?? 0) > 0)}
           />
         </div>
       </section>
