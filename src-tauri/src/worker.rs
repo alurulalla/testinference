@@ -406,6 +406,9 @@ fn backoff(restarts: u32) -> Duration {
 ///
 /// Dev reads it straight from the repo. Packaging a Node runtime into the
 /// bundle is a later slice; until then TESTINFERENCE_SIDECAR can point anywhere.
+/// What the file is called on this platform.
+const NODE: &str = if cfg!(windows) { "node.exe" } else { "node" };
+
 /// Where Node might be, when nobody has told us.
 ///
 /// An application launched from the Finder inherits almost no PATH —
@@ -413,6 +416,11 @@ fn backoff(restarts: u32) -> Duration {
 /// works perfectly in a terminal is invisible to it. Every model-backed
 /// feature would fail with "could not start node", on a machine where
 /// node is plainly installed, which is a maddening thing to debug.
+#[cfg(windows)]
+const KNOWN_NODE: [&str; 2] =
+    [r"C:\Program Files\nodejs\node.exe", r"C:\Program Files (x86)\nodejs\node.exe"];
+
+#[cfg(not(windows))]
 const KNOWN_NODE: [&str; 5] = [
     "/opt/homebrew/bin/node",
     "/usr/local/bin/node",
@@ -426,14 +434,31 @@ fn on_path(name: &str) -> Option<PathBuf> {
     std::env::split_paths(&path).map(|dir| dir.join(name)).find(|full| full.is_file())
 }
 
-/// The newest Node installed by nvm, which keeps them in versioned folders.
-fn from_nvm() -> Option<PathBuf> {
-    let home = std::env::var_os("HOME")?;
-    let versions = PathBuf::from(home).join(".nvm").join("versions").join("node");
-    let mut found: Vec<PathBuf> = std::fs::read_dir(versions)
+/// The newest Node a version manager has installed.
+///
+/// nvm keeps them under `~/.nvm/versions/node/<version>/bin`, and
+/// nvm-windows under `%APPDATA%\nvm\<version>`. Neither puts anything on
+/// the PATH that an application launched from a desktop will see.
+fn from_version_manager() -> Option<PathBuf> {
+    let (root, inner): (PathBuf, &[&str]) = if cfg!(windows) {
+        (PathBuf::from(std::env::var_os("APPDATA")?).join("nvm"), &[])
+    } else {
+        (
+            PathBuf::from(std::env::var_os("HOME")?).join(".nvm").join("versions").join("node"),
+            &["bin"],
+        )
+    };
+
+    let mut found: Vec<PathBuf> = std::fs::read_dir(root)
         .ok()?
         .filter_map(Result::ok)
-        .map(|entry| entry.path().join("bin").join("node"))
+        .map(|entry| {
+            let mut path = entry.path();
+            for part in inner {
+                path = path.join(part);
+            }
+            path.join(NODE)
+        })
         .filter(|path| path.is_file())
         .collect();
     found.sort();
@@ -444,18 +469,20 @@ pub fn node_command() -> Result<PathBuf, String> {
     if let Ok(given) = std::env::var("TESTINFERENCE_NODE") {
         return Ok(PathBuf::from(given));
     }
-    if let Some(found) = on_path("node") {
+    // On Windows the file is node.exe, and looking for "node" finds
+    // nothing at all — including on a machine where it is on the PATH.
+    if let Some(found) = on_path(NODE) {
         return Ok(found);
     }
     if let Some(found) = KNOWN_NODE.iter().map(PathBuf::from).find(|path| path.is_file()) {
         return Ok(found);
     }
-    if let Some(found) = from_nvm() {
+    if let Some(found) = from_version_manager() {
         return Ok(found);
     }
     Err(format!(
-        "Node could not be found. Looked on the PATH, in {}, and in nvm's folders. \
-         Install Node, or set TESTINFERENCE_NODE to where it is.",
+        "Node could not be found. Looked on the PATH for {NODE}, in {}, and where nvm keeps \
+         its versions. Install Node, or set TESTINFERENCE_NODE to where it is.",
         KNOWN_NODE.join(", ")
     ))
 }
@@ -491,7 +518,7 @@ mod tests {
 
         let found = found.expect("node should be found without a PATH");
         assert!(found.is_file(), "{} should exist", found.display());
-        assert!(found.ends_with("node"));
+        assert!(found.ends_with(super::NODE), "it should be the right filename for this platform");
     }
 
     #[test]
