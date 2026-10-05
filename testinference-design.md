@@ -112,6 +112,16 @@ Score = checks passed ÷ 4. Pass at ≥75, Rework at ≥50, otherwise Reject. A 
 **Coverage.** Per requirement: **Gap** if no scenarios and no TCER rows, **Partial** if scenarios exist but no active row, **Covered** if at least one active row exists. Verdicts are ignored — a rejected row still counts as covered. Coverage % = covered ÷ total requirements.
 
 **Risk.** `score = (priority × 3) + feasibility + class`
+
+> This is correction 17, and it is worth stating plainly because the source
+> document says something else. The reference describes the score as
+> `Priority weight × Automation weight × Class weight` — multiplication. Run
+> that over the published worked example and the bands come out 0 / 2 / 10.
+> The published answer is 2 / 8 / 2, which the addition above reproduces
+> exactly. The band thresholds agree: ≥13 and ≥9 are sensible cuts on a scale
+> that runs 5 to 15, and meaningless on one that runs 1 to 27. The prose
+> describes an intention; the numbers describe the app. We matched the
+> numbers.
 - priority: P1=3, P2=2, P3=1
 - feasibility: Manual=3, Partial=2, Automatable=1
 - class: Security=3; Negative, Boundary, Error, Recovery=2; Positive, Edge=1
@@ -146,6 +156,7 @@ Everything the existing app gets wrong is corrected here rather than carried ove
 | 14 | Model confidence | treated as meaningful | used only for sorting; vagueness is judged separately | no |
 | 15 | Module handoff | a browser global, `window.__bedrockTCER` | the project store | no |
 | 16 | Authoring from bad rows | writes a test case from every active row, rejected ones included | rejected rows are skipped and listed with their reason | **yes** |
+| 17 | Risk formula, written vs built | the reference document says `priority × feasibility × class`; the app's own published output cannot come from that | `(priority × 3) + feasibility + class`, taken from the output | no |
 
 On number 9: changing the coverage formula would break comparison with every report your users already have, so the arithmetic stays and the honesty is added beside it rather than inside it.
 

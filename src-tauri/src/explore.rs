@@ -101,10 +101,21 @@ pub async fn run(
     let found = walk.get("pages").and_then(Value::as_array).cloned().unwrap_or_default();
     let mut changed = 0u32;
     let mut saved = Vec::new();
+    let mut unreadable: Vec<String> = Vec::new();
 
     for entry in &found {
-        let Ok(mut page) = serde_json::from_value::<store::AppPage>(entry.clone()) else {
-            continue;
+        // A page that will not parse is reported, not skipped in silence.
+        // Skipping quietly is what let an empty map sit behind a screen
+        // saying pages had been found.
+        let mut page = match serde_json::from_value::<store::AppPage>(entry.clone()) {
+            Ok(page) => page,
+            Err(error) => {
+                unreadable.push(format!(
+                    "{}: {error}",
+                    entry.get("url").and_then(Value::as_str).unwrap_or("a page")
+                ));
+                continue;
+            }
         };
         page.seen_at = store::now();
 
@@ -120,11 +131,12 @@ pub async fn run(
     let fresh = saved.iter().filter(|page| !before.iter().any(|old| old.url == page.url)).count() as u32;
     let needs_sign_in = sign_in.is_none() && saved.len() == 1 && saved.first().is_some_and(looks_like_a_door);
 
-    let skipped: Vec<String> = walk
+    let mut skipped: Vec<String> = walk
         .get("skipped")
         .and_then(Value::as_array)
         .map(|list| list.iter().filter_map(Value::as_str).map(str::to_string).collect())
         .unwrap_or_default();
+    skipped.extend(unreadable);
 
     let note = if needs_sign_in {
         "This application is a login page and nothing else until you are through it. Point the three fields below at the form and give it a test account, and the next run will go further.".to_string()

@@ -238,6 +238,28 @@ pub async fn apply(
         .collect();
     let approved_stale = stale_cases.iter().filter(|case| case.state == "approved").count() as u32;
 
+    // A person changing a requirement's wording is a decision, and until
+    // now it was the one human act that never reached the decision log.
+    // Scenarios get an entry at Gate A and cases at Gate B; a requirement
+    // only got one when an orphan was dropped. So the log could say "0
+    // decisions" on a project where someone had spent an afternoon
+    // settling the wording.
+    store::record_decision(
+        project,
+        &store::Decision {
+            at: store::now(),
+            gate: "requirements".to_string(),
+            subject: req_id.to_string(),
+            verdict: format!("reworded · {change}"),
+            comment: Some(format!(
+                "was: {} — {}",
+                before.title,
+                if before.acceptance.is_empty() { "no acceptance" } else { &before.acceptance }
+            )),
+            title: Some(after.title.clone()),
+        },
+    )?;
+
     let discussion = store::Discussion {
         id: store::next_discussion_id(project),
         req_id: req_id.to_string(),

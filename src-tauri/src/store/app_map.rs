@@ -56,6 +56,11 @@ pub struct AppPage {
     #[serde(default)]
     pub links: Vec<String>,
     pub from: Option<String>,
+    /// Filled in on this side, after the page comes back from the walk.
+    /// Without a default, every page the crawler sent failed to parse and
+    /// was skipped — so the map stayed empty while the screen reported
+    /// finding pages.
+    #[serde(default)]
     pub seen_at: String,
 }
 
@@ -102,4 +107,63 @@ pub fn clear(project_path: &Path) -> Result<(), String> {
             .map_err(|error| format!("could not clear {}: {error}", target.display()))?;
     }
     fs::create_dir_all(&target).map_err(|error| format!("could not create {target:?}: {error}"))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Exactly what the crawler sends back, as it sends it.
+    ///
+    /// This is the test that was missing. `seenAt` is filled in on this
+    /// side, and while the field had no default every page failed to
+    /// parse and was dropped without a word — so Explore reported finding
+    /// pages and saved none of them.
+    const FROM_THE_CRAWLER: &str = r#"{
+        "url": "https://www.saucedemo.com",
+        "title": "Swag Labs",
+        "fingerprint": "76132b8b",
+        "pattern": "https://www.saucedemo.com",
+        "shape": "c2a20bc6",
+        "examples": [],
+        "links": [],
+        "from": null,
+        "elements": [{
+            "tag": "input",
+            "role": "textbox",
+            "name": "Username",
+            "how": "testId",
+            "selector": "locator('[data-test=\"username\"]')",
+            "sturdiness": 1.0,
+            "matches": 1,
+            "checked": true,
+            "kind": "input"
+        }]
+    }"#;
+
+    #[test]
+    fn a_page_from_the_crawler_can_be_read() {
+        let page: AppPage = serde_json::from_str(FROM_THE_CRAWLER).expect("it should parse");
+        assert_eq!(page.url, "https://www.saucedemo.com");
+        assert_eq!(page.elements.len(), 1);
+        assert_eq!(page.elements[0].matches, 1);
+        assert!(page.seen_at.is_empty(), "it is filled in after the walk");
+    }
+
+    #[test]
+    fn a_page_survives_being_saved_and_read_back() {
+        let dir = std::env::temp_dir().join(format!("ti-map-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&dir);
+        fs::create_dir_all(context_dir(&dir)).expect("make the project");
+
+        let mut page: AppPage = serde_json::from_str(FROM_THE_CRAWLER).expect("parse");
+        page.seen_at = "2026-10-05T00:00:00Z".to_string();
+        save(&dir, &page).expect("save it");
+
+        let read = list(&dir);
+        assert_eq!(read.len(), 1, "it should come back");
+        assert_eq!(read[0].elements[0].selector, page.elements[0].selector);
+
+        let _ = fs::remove_dir_all(&dir);
+    }
 }
