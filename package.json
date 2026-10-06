@@ -21,7 +21,8 @@
     "pdfjs-dist": "^6.4.299",
     "playwright": "^1.63.0",
     "react": "^19",
-    "react-dom": "^19"
+    "react-dom": "^19",
+    "yaml": "^2.9.1"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2",

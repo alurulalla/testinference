@@ -274,14 +274,22 @@ export default function ExplorePanel({ project }: { project: OpenProject }) {
                 type="button"
                 disabled={running}
                 onClick={() =>
-                  void call("sign_in_set", {
-                    projectPath: project.path,
-                    username,
-                    password,
-                    submit,
-                    user,
-                    secret,
-                  })
+                  // The password goes to the keychain first and on its own,
+                  // so it never travels with the rest of the sign-in into
+                  // anything that is written down.
+                  void (secret.trim()
+                    ? call("sign_in_secret_set", { projectId: project.id, secret })
+                    : Promise.resolve(null)
+                  )
+                    .then(() =>
+                      call("sign_in_set", {
+                        projectPath: project.path,
+                        username,
+                        password,
+                        submit,
+                        user,
+                      }),
+                    )
                     .then(() => {
                       setSecret("");
                       setShowSignIn(false);
@@ -295,7 +303,8 @@ export default function ExplorePanel({ project }: { project: OpenProject }) {
                 type="button"
                 className="ghost danger"
                 onClick={() =>
-                  void call("sign_in_clear", { projectPath: project.path })
+                  void call("sign_in_secret_clear", { projectId: project.id })
+                    .then(() => call("sign_in_clear", { projectPath: project.path }))
                     .then(() => setShowSignIn(false))
                     .catch((cause: unknown) => setError(describeError(cause)))
                 }

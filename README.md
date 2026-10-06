@@ -66,12 +66,17 @@ menu sees almost no PATH, so it cannot rely on that alone.
 | | |
 |---|---|
 | `src/` | the window: React and TypeScript |
-| `src-tauri/` | the core: Rust. Stores records, schedules work, owns the keychain |
-| `sidecar/` | the worker: TypeScript on Node. Talks to models, reads documents, drives the browser |
+| `sidecar/` | the application: TypeScript on Node. Records, runs, models, documents, the browser — everything |
+| `src-tauri/` | the shell: about 200 lines of Rust. Opens the window, keeps the worker running, holds the keychain |
+
+The shell is deliberately thin. Every command the window sends goes through
+one relay to the worker, so there is one definition of every record and one
+language to debug in. The Rust is only there because Tauri is Rust.
 | `brand/` | the mark, and the source it was generated from |
 
 Your API keys go to the operating system's keychain — Keychain on macOS,
 Credential Manager on Windows — and never into the project or into git.
+Linux has no backend configured yet, and without one keys are not kept.
 
 A project's own folder, wherever you put it, holds a `.testinference`
 directory: the requirements, scenarios, cases, the map of the application,

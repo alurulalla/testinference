@@ -28,6 +28,7 @@ import { suggest as suggestMapping } from "./import/map.js";
 import { crawl } from "./explore/crawl.js";
 import { generate } from "./code/index.js";
 import { play } from "./run/play.js";
+import { commands } from "./commands.js";
 import { validateCases } from "./engines/validation.js";
 import { classifyCases } from "./engines/feasibility.js";
 import { checkBalance } from "./engines/balance.js";
@@ -98,6 +99,11 @@ const handlers: Record<string, Handler> = {
   "engines.needs": (params) =>
     requirementNeeds(rankScenarios(params["scenarios"] as never[]), params["rows"] as never[]),
 };
+
+// The window's commands sit beside the worker's own methods. Neither
+// shares a name with the other — commands use underscores, methods dots —
+// and registering them in one table keeps one place to look.
+Object.assign(handlers, commands);
 
 async function dispatch(request: Request): Promise<void> {
   const handler = handlers[request.method];

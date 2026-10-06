@@ -28,10 +28,6 @@ pub fn clear(provider: &str) -> Result<(), String> {
     }
 }
 
-pub fn has_key(provider: &str) -> bool {
-    matches!(read(provider), Ok(Some(_)))
-}
-
 fn entry(provider: &str) -> Result<Entry, String> {
     Entry::new(SERVICE, provider).map_err(|error| format!("could not reach the keychain: {error}"))
 }

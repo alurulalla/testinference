@@ -871,11 +871,13 @@ export interface Commands {
       password: string;
       submit: string;
       user: string;
-      secret: string;
     };
     result: null;
   };
   sign_in_clear: { args: { projectPath: string }; result: null };
+  /** The test account's password goes to the keychain, never into the project. */
+  sign_in_secret_set: { args: { projectId: string; secret: string }; result: null };
+  sign_in_secret_clear: { args: { projectId: string }; result: null };
   document_drift: { args: { projectPath: string }; result: DriftReport };
   document_drift_export: { args: { projectPath: string }; result: string };
   design_plan: { args: { projectPath: string }; result: DesignPlan };
@@ -973,10 +975,6 @@ export interface Commands {
   project_last: { args: Record<string, never>; result: OpenProject | null };
   core_info: { args: Record<string, never>; result: CoreInfo };
   worker_status: { args: Record<string, never>; result: WorkerStatus };
-  worker_ping: { args: Record<string, never>; result: WorkerPong };
-  worker_crash: { args: Record<string, never>; result: { crashing: boolean } };
-  start_demo_job: { args: Record<string, never>; result: { jobId: string } };
-  cancel_job: { args: { jobId: string }; result: { cancelled: boolean } };
   provider_list: { args: Record<string, never>; result: ProviderStatus[] };
   provider_set_key: { args: { provider: string; key: string }; result: null };
   provider_clear_key: { args: { provider: string }; result: null };
